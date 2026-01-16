@@ -1,0 +1,7 @@
+manager_node:
+  ros__parameters:
+    rate:
+      state_machine: 0.2
+
+    waypoints:
+      points: [ 0.76, -0.5, 0.2, 0.0]
