@@ -73,7 +73,7 @@ void ManagerNode::configPubSub() {
 
   sub_have_goal_ = create_subscription<std_msgs::msg::Bool>("/uav1/have_goal", 1, std::bind(&ManagerNode::subOpHaveGoal, this, std::placeholders::_1));
   sub_qrcode_reader_ =
-      create_subscription<laser_msgs::msg::PointWithString>("/uav1/qrcode_reader", 1, std::bind(&ManagerNode::subQrcodeReader, this, std::placeholders::_1));
+      create_subscription<laser_msgs::msg::PointWithString>("/uav1/qrcode/detections", 1, std::bind(&ManagerNode::subQrcodeReader, this, std::placeholders::_1));
 
   pub_goto_      = create_publisher<laser_msgs::msg::PoseWithHeading>("uav1/control_manager/goto", 1);
   pub_have_goal_ = create_publisher<std_msgs::msg::Bool>("uav1/have_goal", 1);
@@ -124,8 +124,6 @@ void ManagerNode::goingTo() {
       auto callback_result = [this](rclcpp::Client<std_srvs::srv::Trigger>::SharedFuture future) -> void {
         RCLCPP_INFO(get_logger(), "%s", future.get()->message.c_str());
       };
-
-      clt_land_->async_send_request(request, callback_result);
     }
 
     if (waypoints_qty_points_ > 0) {
@@ -161,7 +159,6 @@ void ManagerNode::subQrcodeReader(laser_msgs::msg::PointWithString qrcode_reader
       return;
     }
   }
-
   qrcode_vector_.push_back(qrcode_reader);
 }
 
