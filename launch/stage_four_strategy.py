@@ -14,12 +14,13 @@ from launch.event_handlers.on_process_start import OnProcessStart
 from launch_ros.event_handlers import OnStateTransition
 from launch_ros.events.lifecycle import ChangeState
 
+import os
 import lifecycle_msgs.msg
 
 def generate_launch_description():
 #Declare arguments
     declared_arguments = []
-
+    uav_name = os.environ['UAV_NAME']
     declared_arguments.append(
         DeclareLaunchArgument(
             'stage_four_file',
@@ -40,6 +41,11 @@ def generate_launch_description():
         output='screen',
         parameters=[manager_node_file],
         remappings=[
+            ('/diagnostics_in', '/' + uav_name + '/control_manager/diagnostics'),
+            ('/qrcode_detection_in', '/' + uav_name + '/qrcode/detections'),
+            ('/trajectory_path_out', '/' + uav_name + '/control_manager/trajectory_path'), 
+            ('/takeoff', '/' + uav_name + '/control_manager/takeoff'),
+            ('/land', '/' + uav_name + '/control_manager/land'),
         ]
     )
 

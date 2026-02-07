@@ -21,6 +21,8 @@
 #include <geometry_msgs/msg/pose.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <laser_msgs/msg/pose_with_heading.hpp>
+#include <laser_msgs/msg/trajectory_path.hpp>
+#include <laser_msgs/msg/uav_control_diagnostics.hpp>
 
 using namespace std::chrono;
 
@@ -51,56 +53,43 @@ private:
   void configServices();
   void configClients();
 
-  //func
-
-  void stateTriggerRequest(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std:: shared_ptr<std_srvs::srv::Trigger::Response> response);
-
-  void subOpHaveGoal(std_msgs::msg::Bool have_goal);
-  void subQrcodeReader(laser_msgs::msg::PointWithString qrcode_reader);
+  // func
+  void stateTriggerRequest(const std::shared_ptr<std_srvs::srv::Trigger::Request> request, std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   void takeoff();
-  void getNextPose();
-  void goingTo();
-  void pubToTmr();
-  void QrcodeState();
+  void land();
 
-  //Timers
+  // Timers
+  rclcpp::TimerBase::SharedPtr tmr_manager_;
+  void                         tmrManager();
 
-  rclcpp::TimerBase::SharedPtr tmr_goingto_;
+  // Variables
+  int                             start_point_;
+  double                          _rate_tmr_manager_;
+  int                             waypoints_qty_points_;
+  std::vector<double>             _waypoints_points_;
+  laser_msgs::msg::TrajectoryPath trajectory_path_;
 
-  //Variables
-  int start_point_;
-  double _rate_state_machine_;
-  int yaw_point_;
-  int waypoints_qty_points_;
-  std::vector<double> _waypoints_points_;
-  std::vector<double> yawpoints_;
-  bool yaw_control_;
-  laser_msgs::msg::PoseWithHeading goto_pos_;
-
-  bool have_goal_;
+  laser_msgs::msg::UavControlDiagnostics        diagnostics_;
   std::vector<laser_msgs::msg::PointWithString> qrcode_vector_;
 
-  //Servs
-
+  // Servs
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_start_state_machine_;
 
-  //Subs
-  
-  rclcpp::Subscription<std_msgs::msg::Bool>::ConstSharedPtr sub_have_goal_;
+  // Subs
+  rclcpp::Subscription<laser_msgs::msg::UavControlDiagnostics>::ConstSharedPtr sub_diagnostics_;
+  void                                                                         subControlManagerDiagnostics(const laser_msgs::msg::UavControlDiagnostics &msg);
+
   rclcpp::Subscription<laser_msgs::msg::PointWithString>::ConstSharedPtr sub_qrcode_reader_;
+  void                                                                   subQrcodeReader(laser_msgs::msg::PointWithString qrcode_reader);
 
-  //pub
+  // pub
+  rclcpp_lifecycle::LifecyclePublisher<laser_msgs::msg::TrajectoryPath>::SharedPtr pub_trajectory_;
 
-  rclcpp_lifecycle::LifecyclePublisher<laser_msgs::msg::PoseWithHeading>::SharedPtr pub_goto_;
-  rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Bool>::SharedPtr pub_have_goal_;
-  //Clt
-
-  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr clt_arm_;
+  // Clt
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr clt_land_;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr clt_takeoff_;
-  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr clt_disarm_;
 };
-}
+}  // namespace manager_node_cpp
 
 #endif
