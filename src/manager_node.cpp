@@ -86,8 +86,8 @@ void ManagerNode::configPubSub() {
 
   sub_diagnostics_ = create_subscription<laser_msgs::msg::UavControlDiagnostics>(
       "diagnostics_in", 1, std::bind(&ManagerNode::subControlManagerDiagnostics, this, std::placeholders::_1));
-  sub_qrcode_reader_ =
-      create_subscription<laser_msgs::msg::PointWithString>("qrcode_detection_in", 1, std::bind(&ManagerNode::subQrcodeReader, this, std::placeholders::_1));
+  sub_qrcode_reader_ = create_subscription<laser_msgs::msg::PointWithStringArrayStamped>("qrcode_detection_in", 1,
+                                                                                         std::bind(&ManagerNode::subQrcodeReader, this, std::placeholders::_1));
 
   pub_trajectory_ = create_publisher<laser_msgs::msg::TrajectoryPath>("trajectory_path_out", 1);
 }
@@ -96,7 +96,7 @@ void ManagerNode::configPubSub() {
 /* ConfigTimers() //{ */
 void ManagerNode::configTimers() {
   RCLCPP_INFO(get_logger(), "initTimers");
-  
+
   tmr_manager_ = create_wall_timer(std::chrono::duration<double>(1.0 / _rate_tmr_manager_), std::bind(&ManagerNode::tmrManager, this), nullptr);
 }
 //}
@@ -138,6 +138,7 @@ void ManagerNode::takeoff() {
 
   clt_takeoff_->async_send_request(request, callback_result);
 }
+//}
 
 /* Land() //{ */
 void ManagerNode::land() {
@@ -148,13 +149,12 @@ void ManagerNode::land() {
 
   clt_land_->async_send_request(request, callback_result);
 }
+//}
 
 /* tmrManager() //{ */
 void ManagerNode::tmrManager() {
-
 }
 //}
-
 
 /* SubControlManagerDiagnostics() //{ */
 void ManagerNode::subControlManagerDiagnostics(const laser_msgs::msg::UavControlDiagnostics &msg) {
@@ -163,7 +163,36 @@ void ManagerNode::subControlManagerDiagnostics(const laser_msgs::msg::UavControl
 //}
 
 /* SubQrcodeReader() //{ */
-void ManagerNode::subQrcodeReader(laser_msgs::msg::PointWithString qrcode_reader) {
+void ManagerNode::subQrcodeReader(const laser_msgs::msg::PointWithStringArrayStamped &qrcode_reader) {
+
+  if (!qr_codes_.empty()) {
+    for (int i = 0; i < qr_codes_.size(); i++) {
+      std::cout << qr_codes_[i] << std::endl;
+    }
+  }
+
+  if (qrcode_reader.array.empty()) {
+    return;
+  }
+
+  const std::lock_guard<std::mutex> lock(qrcode_mtx_);
+  
+  std::string data       = qrcode_reader.array[0].data;
+  bool        new_qrcode = true;
+
+  if (!first_qrcode_) {
+    for (int i = 0; i < qr_codes_.size(); i++) {
+      if (data == qr_codes_[i]) {
+         new_qrcode = false;
+      }
+    }
+  } else {
+    qr_codes_.push_back(data);
+    first_qrcode_ = false;
+  }
+
+  if(new_qrcode)
+  qr_codes_.push_back(data);
 }
 //}
 

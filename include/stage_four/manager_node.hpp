@@ -23,7 +23,7 @@
 #include <laser_msgs/msg/pose_with_heading.hpp>
 #include <laser_msgs/msg/trajectory_path.hpp>
 #include <laser_msgs/msg/uav_control_diagnostics.hpp>
-
+#include <laser_msgs/msg/point_with_string_array_stamped.hpp>
 using namespace std::chrono;
 
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
@@ -69,6 +69,8 @@ private:
   int                             waypoints_qty_points_;
   std::vector<double>             _waypoints_points_;
   laser_msgs::msg::TrajectoryPath trajectory_path_;
+  std::vector<std::string>        qr_codes_;
+  std::mutex                      qrcode_mtx_;
 
   laser_msgs::msg::UavControlDiagnostics        diagnostics_;
   std::vector<laser_msgs::msg::PointWithString> qrcode_vector_;
@@ -80,8 +82,8 @@ private:
   rclcpp::Subscription<laser_msgs::msg::UavControlDiagnostics>::ConstSharedPtr sub_diagnostics_;
   void                                                                         subControlManagerDiagnostics(const laser_msgs::msg::UavControlDiagnostics &msg);
 
-  rclcpp::Subscription<laser_msgs::msg::PointWithString>::ConstSharedPtr sub_qrcode_reader_;
-  void                                                                   subQrcodeReader(laser_msgs::msg::PointWithString qrcode_reader);
+  rclcpp::Subscription<laser_msgs::msg::PointWithStringArrayStamped>::ConstSharedPtr sub_qrcode_reader_;
+  void subQrcodeReader(const laser_msgs::msg::PointWithStringArrayStamped &qrcode_reader);
 
   // pub
   rclcpp_lifecycle::LifecyclePublisher<laser_msgs::msg::TrajectoryPath>::SharedPtr pub_trajectory_;
@@ -89,6 +91,8 @@ private:
   // Clt
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr clt_land_;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr clt_takeoff_;
+
+  bool first_qrcode_{true};
 };
 }  // namespace manager_node_cpp
 
