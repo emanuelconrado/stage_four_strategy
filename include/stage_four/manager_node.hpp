@@ -93,6 +93,8 @@ private:
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr clt_takeoff_;
 
   bool first_qrcode_{true};
+  bool is_active_{false};
+  bool first_pub_{true};
 };
 }  // namespace manager_node_cpp
 

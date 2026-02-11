@@ -77,6 +77,22 @@ void ManagerNode::getParameters() {
   get_parameter("waypoints.points", _waypoints_points_);
 
   waypoints_qty_points_ = _waypoints_points_.size() / 4;
+
+  trajectory_path_.speed = 0.5;
+
+
+  laser_msgs::msg::PoseWithHeading trajectory_point;
+
+  for (int i = 0; i < waypoints_qty_points_; i++) {
+    trajectory_point.position.x = _waypoints_points_[i];
+    trajectory_point.position.y = _waypoints_points_[i + 1];
+    trajectory_point.position.z = _waypoints_points_[i + 2];
+    trajectory_point.heading    = _waypoints_points_[i + 3];
+
+    std::cout << trajectory_point.position.x << trajectory_point.position.y << trajectory_point.position.z << std::endl;
+
+    trajectory_path_.waypoints.push_back(trajectory_point);
+  }
 }
 //}
 
@@ -125,7 +141,7 @@ void ManagerNode::stateTriggerRequest([[maybe_unused]] const std::shared_ptr<std
   response->success = true;
   response->message = "State Machine started";
 
-  takeoff();
+  is_active_ = true;
 }
 //}
 
@@ -153,6 +169,14 @@ void ManagerNode::land() {
 
 /* tmrManager() //{ */
 void ManagerNode::tmrManager() {
+  if (!is_active_) {
+    return;
+  }
+
+  if (first_pub_ && diagnostics_.is_fly) {
+    pub_trajectory_->publish(trajectory_path_);
+    first_pub_ = false;
+  }
 }
 //}
 
@@ -176,14 +200,14 @@ void ManagerNode::subQrcodeReader(const laser_msgs::msg::PointWithStringArraySta
   }
 
   const std::lock_guard<std::mutex> lock(qrcode_mtx_);
-  
+
   std::string data       = qrcode_reader.array[0].data;
   bool        new_qrcode = true;
 
   if (!first_qrcode_) {
     for (int i = 0; i < qr_codes_.size(); i++) {
       if (data == qr_codes_[i]) {
-         new_qrcode = false;
+        new_qrcode = false;
       }
     }
   } else {
@@ -191,8 +215,8 @@ void ManagerNode::subQrcodeReader(const laser_msgs::msg::PointWithStringArraySta
     first_qrcode_ = false;
   }
 
-  if(new_qrcode)
-  qr_codes_.push_back(data);
+  if (new_qrcode)
+    qr_codes_.push_back(data);
 }
 //}
 
