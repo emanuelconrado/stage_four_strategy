@@ -64,8 +64,11 @@ private:
   void                         tmrManager();
 
   // Variables
+  int                             trajectory_count_{0};
   int                             start_point_;
   double                          _rate_tmr_manager_;
+  double                          _speed_;
+  double                          _z_offset_;
   int                             waypoints_qty_points_;
   std::vector<double>             _waypoints_points_;
   laser_msgs::msg::TrajectoryPath trajectory_path_;
@@ -92,6 +95,7 @@ private:
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr clt_land_;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr clt_takeoff_;
 
+  bool land_request_{false};
   bool first_qrcode_{true};
   bool is_active_{false};
   bool first_pub_{true};
