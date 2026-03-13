@@ -99,6 +99,7 @@ private:
   bool first_qrcode_{true};
   bool is_active_{false};
   bool first_pub_{true};
+  bool _stop_on_waypoints_{true};
 };
 }  // namespace manager_node_cpp
 

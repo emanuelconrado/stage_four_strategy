@@ -12,6 +12,7 @@ ManagerNode::ManagerNode(const rclcpp::NodeOptions &options) : rclcpp_lifecycle:
   declare_parameter("waypoints.yawpoints", std::vector<double>{1.57, 3.14, -1.57, 0.0});
   declare_parameter("waypoints.speed", rclcpp::ParameterValue(0.3));
   declare_parameter("waypoints.z_offset", rclcpp::ParameterValue(3.0));
+  declare_parameter("waypoints.stop_on_waypoints", rclcpp::ParameterValue(true));
 }
 //}
 
@@ -78,8 +79,31 @@ void ManagerNode::getParameters() {
   get_parameter("waypoints.points", _waypoints_points_);
   get_parameter("waypoints.speed", _speed_);
   get_parameter("waypoints.z_offset", _z_offset_);
+  get_parameter("waypoints.stop_on_waypoints", _stop_on_waypoints_);
 
   waypoints_qty_points_ = _waypoints_points_.size() / 4;
+
+
+  trajectory_path_.speed             = _speed_;
+  trajectory_path_.stop_on_waypoints = _stop_on_waypoints_;
+
+  for (int i = 0; i < waypoints_qty_points_; i++) {
+    laser_msgs::msg::PoseWithHeading trajectory_point;
+
+    trajectory_point.position.x = _waypoints_points_[trajectory_count_];
+    trajectory_point.position.y = _waypoints_points_[trajectory_count_ + 1];
+    trajectory_point.position.z = (_waypoints_points_[trajectory_count_ + 2] + _z_offset_);
+    trajectory_point.heading    = _waypoints_points_[trajectory_count_ + 3];
+
+    std::cout << trajectory_point.position.x << std::endl;
+    std::cout << trajectory_point.position.y << std::endl;
+    std::cout << trajectory_point.position.z << std::endl;
+    std::cout << trajectory_point.heading << std::endl;
+
+    trajectory_path_.waypoints.push_back(trajectory_point);
+
+    trajectory_count_ += 4;
+  }
 }
 //}
 
@@ -128,6 +152,8 @@ void ManagerNode::stateTriggerRequest([[maybe_unused]] const std::shared_ptr<std
   response->success = true;
   response->message = "State Machine started";
 
+  pub_trajectory_->publish(trajectory_path_);
+
   is_active_ = true;
 }
 //}
@@ -160,27 +186,7 @@ void ManagerNode::tmrManager() {
     return;
   }
 
-  if (!diagnostics_.have_goal && diagnostics_.is_fly && waypoints_qty_points_ > 0) {
-
-    laser_msgs::msg::TrajectoryPath trajectory_path;
-    trajectory_path.speed = _speed_;
-
-    laser_msgs::msg::PoseWithHeading trajectory_point;
-
-    trajectory_point.position.x = _waypoints_points_[trajectory_count_];
-    trajectory_point.position.y = _waypoints_points_[trajectory_count_ + 1];
-    trajectory_point.position.z = (_waypoints_points_[trajectory_count_ + 2] - _z_offset_);
-    trajectory_point.heading    = _waypoints_points_[trajectory_count_ + 3];
-
-    std::cout << trajectory_point.position.x << trajectory_point.position.y << trajectory_point.position.z << std::endl;
-    trajectory_path.waypoints.push_back(trajectory_point);
-
-    waypoints_qty_points_--;
-    trajectory_count_ += 4;
-    pub_trajectory_->publish(trajectory_path);
-  }
-
-  if (waypoints_qty_points_ == 0 && !land_request_) {
+  if (!diagnostics_.have_goal && diagnostics_.is_fly && !land_request_) {
     land();
     land_request_ = true;
   }
